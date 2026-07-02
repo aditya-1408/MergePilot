@@ -6,7 +6,7 @@ export function QueryProvider({children}:{children:React.ReactElement.ReactNode}
     const [client]=useState(()=>new QueryClient() )
 
     return (
-        <QueryClientProvider client={cleint}>
+        <QueryClientProvider client={client}>
             {children}
         </QueryClientProvider>
     )
