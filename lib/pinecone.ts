@@ -1,7 +1,9 @@
-import {Pinecone} from "@pinecone-database/pinecone"
+import { Pinecone } from "@pinecone-database/pinecone";
 
-export const pinecone= new Pinecone({
-    apiKey:process.env.PINECONE_DB_API_KEY!
-})
+export const pinecone = new Pinecone({
+  apiKey: process.env.PINECONE_DB_API_KEY!,
+});
 
-export const pineconeIndex=pinecone.index("merge-pilot-vector-embeddings")
+export const pineconeIndex = pinecone.index({
+  name: "merge-pilot",
+});

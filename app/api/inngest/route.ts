@@ -1,10 +1,10 @@
 import { serve } from "inngest/next";
 import { inngest } from "@/inngest/client";
-import { processTask } from "@/inngest/functions";
+import { indexRepo } from "@/inngest/functions";
 
 const handler = serve({
   client: inngest,
-  functions: [processTask],
+  functions: [indexRepo],
 });
 
 export const GET = handler.GET;
