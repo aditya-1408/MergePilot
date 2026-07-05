@@ -4,6 +4,7 @@ import { fetchUserContribution, getGithubToken } from "@/module/github/lib/githu
 import { headers } from "next/headers";
 import { Octokit } from "octokit";
 import { auth } from "@/lib/auth";
+import prisma from "@/lib/db";
 
 export async function getDashboardStats() {
   try {
@@ -18,8 +19,10 @@ export async function getDashboardStats() {
 
     const { data: user } = await octokit.rest.users.getAuthenticated();
 
-    // TODO: fetch total connected repos from db
-    const totalRepos = 30;
+    // Get total connected repos from DB
+    const totalRepos = await prisma.repository.count({
+      where: { userId: session.user.id },
+    });
 
     const calendar = await fetchUserContribution(token, user.login);
     const totalCommits = calendar?.totalContributions || 0;
@@ -30,8 +33,15 @@ export async function getDashboardStats() {
     });
     const totalPRs = prs.total_count;
 
-    // TODO: count ai reviews from database
-    const totalReviews = 44;
+    // Count AI reviews from database
+    const totalReviews = await prisma.review.count({
+      where: {
+        repository: {
+          userId: session.user.id,
+        },
+        status: "completed",
+      },
+    });
 
     return { totalCommits, totalPRs, totalReviews, totalRepos };
   } catch (error) {
