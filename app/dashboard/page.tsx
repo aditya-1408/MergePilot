@@ -17,7 +17,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from "recharts";
+} from "recharts"; 
 import {
   GitCommit,
   GitPullRequest,

@@ -16,7 +16,11 @@ export const auth = betterAuth({
         scope:["repo"]
     }
   },  
-  trustedOrigins:["http://localhost:3000","https://mocker-stimuli-altitude.ngrok-free.dev"],
+  trustedOrigins: [
+    "http://localhost:3000",
+    ...(process.env.NEXT_PUBLIC_APP_BASE_URL ? [process.env.NEXT_PUBLIC_APP_BASE_URL] : []),
+    ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
+  ],
   plugins:[
      polar({
             client: polarClient,

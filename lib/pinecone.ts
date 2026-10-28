@@ -5,5 +5,5 @@ export const pinecone = new Pinecone({
 });
 
 export const pineconeIndex = pinecone.index({
-  name: "merge-pilot",
+  name: process.env.PINECONE_INDEX_NAME || "merge-pilot",
 });

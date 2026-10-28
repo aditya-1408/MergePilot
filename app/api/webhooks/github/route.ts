@@ -21,9 +21,12 @@ export async function POST(req: NextRequest) {
     const [owner, repoName] = repo.split("/");
 
     if (action === "opened" || action === "synchronize") {
-      reviewPullRequest(owner, repoName, prNumber)
-        .then(() => console.log(`Review completed for ${repo} #${prNumber}`))
-        .catch((error) => console.log(`Review failed for ${repo} #${prNumber}:`, error));
+      try {
+        await reviewPullRequest(owner, repoName, prNumber);
+        console.log(`Review completed for ${repo} #${prNumber}`);
+      } catch (error) {
+        console.error(`Review failed for ${repo} #${prNumber}:`, error);
+      }
     }
   }
 
