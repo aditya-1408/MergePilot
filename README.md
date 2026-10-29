@@ -1,5 +1,11 @@
 # MergePilot 🤖
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-merge--pilot--lime.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://merge-pilot-lime.vercel.app)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
+> 🚀 **Live Demo:** [https://merge-pilot-lime.vercel.app](https://merge-pilot-lime.vercel.app)
+
 **AI-powered code review platform that automatically reviews your pull requests using RAG (Retrieval-Augmented Generation) and Google Gemini.**
 
 MergePilot connects to your GitHub repositories, indexes your entire codebase into a vector database, and generates detailed AI code reviews whenever a pull request is opened — right inside GitHub as a comment.
