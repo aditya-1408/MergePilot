@@ -6,6 +6,10 @@ import {polar,checkout,portal,usage,webhooks} from  "@polar-sh/better-auth"
 import prisma from "./db";
 import { updatePolarCustomerId, updateUserTier } from "@/module/payment/lib/subscription";
 export const auth = betterAuth({
+  baseURL:
+    process.env.BETTER_AUTH_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined),
+  secret: process.env.BETTER_AUTH_SECRET,
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
@@ -20,6 +24,7 @@ export const auth = betterAuth({
     "http://localhost:3000",
     ...(process.env.NEXT_PUBLIC_APP_BASE_URL ? [process.env.NEXT_PUBLIC_APP_BASE_URL] : []),
     ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
+    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
   ],
   plugins:[
      polar({

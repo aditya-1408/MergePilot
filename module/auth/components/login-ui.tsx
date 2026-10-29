@@ -3,6 +3,7 @@ import React from "react";
 import { useState } from "react";
 import { signIn } from "@/lib/auth-client";
 import { FaGithub } from "react-icons/fa";
+import { toast } from "sonner";
 const LoginUI = () => {
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -11,9 +12,13 @@ const LoginUI = () => {
     try {
       await signIn.social({
         provider: "github",
+        callbackURL: "/dashboard",
       });
     } catch (error) {
       console.error("Error during GitHub login:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to initiate GitHub login"
+      );
       setIsLoading(false);
     }
   };
