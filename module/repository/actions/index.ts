@@ -48,20 +48,33 @@ export async function connectRepository(
     console.log("Repo:", repo);
     console.log("GitHub ID:", githubId);
 
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    // Get session
+    let session;
+    try {
+      session = await auth.api.getSession({
+        headers: await headers(),
+      });
+      console.log("Session retrieved:", session ? "YES" : "NO");
+      console.log("User ID:", session?.user?.id);
+    } catch (sessionError) {
+      console.error("Session error:", sessionError);
+      throw new Error("Failed to retrieve session. Please log in again.");
+    }
 
-    console.log("Session:", session?.user?.id);
-
-    if (!session) {
-      throw new Error("Unauthorized - No session found");
+    if (!session?.user?.id) {
+      throw new Error("Unauthorized - No active session. Please log in.");
     }
 
     // Check if user can connect more repos
-    console.log("Checking if user can connect repository...");
-    const canConnect = await canConnectRepository(session.user.id);
-    console.log("Can connect:", canConnect);
+    console.log("Checking repository limits...");
+    let canConnect;
+    try {
+      canConnect = await canConnectRepository(session.user.id);
+      console.log("Can connect:", canConnect);
+    } catch (limitError) {
+      console.error("Limit check error:", limitError);
+      throw new Error("Failed to check repository limits. Please try again.");
+    }
 
     if (!canConnect) {
       throw new Error(
@@ -71,12 +84,19 @@ export async function connectRepository(
 
     // Check if repository is already connected
     console.log("Checking for existing repository...");
-    const existingRepo = await prisma.repository.findFirst({
-      where: {
-        githubId: BigInt(githubId),
-        userId: session.user.id,
-      },
-    });
+    let existingRepo;
+    try {
+      existingRepo = await prisma.repository.findFirst({
+        where: {
+          githubId: BigInt(githubId),
+          userId: session.user.id,
+        },
+      });
+      console.log("Existing repo:", existingRepo ? "Found" : "Not found");
+    } catch (dbError) {
+      console.error("Database check error:", dbError);
+      throw new Error("Failed to check existing repositories. Please try again.");
+    }
 
     if (existingRepo) {
       console.log("Repository already connected");
@@ -85,12 +105,22 @@ export async function connectRepository(
 
     // Create webhook
     console.log("Creating webhook...");
-    const webhook = await createWebhook(owner, repo);
-    console.log("Webhook created:", webhook?.id);
+    let webhook;
+    try {
+      webhook = await createWebhook(owner, repo);
+      console.log("Webhook created:", webhook?.id);
+    } catch (webhookError) {
+      console.error("Webhook creation error:", webhookError);
+      throw new Error("Failed to create GitHub webhook. Check your GitHub token and permissions.");
+    }
 
-    if (webhook) {
-      // Create repository record
-      console.log("Creating repository record...");
+    if (!webhook) {
+      throw new Error("Failed to create webhook. Please ensure you have admin access to the repository.");
+    }
+
+    // Create repository record
+    console.log("Creating repository record...");
+    try {
       await prisma.repository.create({
         data: {
           githubId: BigInt(githubId),
@@ -102,37 +132,48 @@ export async function connectRepository(
         },
       });
       console.log("Repository record created");
+    } catch (createError) {
+      console.error("Repository creation error:", createError);
+      throw new Error("Failed to save repository to database. Please try again.");
+    }
 
-      // Increment repository count
-      console.log("Incrementing repository count...");
+    // Increment repository count
+    console.log("Incrementing repository count...");
+    try {
       await incrementRepositoryCount(session.user.id);
       console.log("Repository count incremented");
+    } catch (incrementError) {
+      console.error("Failed to increment count:", incrementError);
+      // Don't throw - repository is already created
+    }
 
-      // Trigger repository indexing (fire and forget)
-      try {
-        console.log("Triggering Inngest job...");
-        await inngest.send({
-          name: "repository.connected",
-          data: {
-            owner,
-            repo,
-            userId: session.user.id,
-          },
-        });
-        console.log("Inngest job triggered");
-      } catch (error) {
-        console.error("Failed to trigger repository indexing:", error);
-      }
+    // Trigger repository indexing (fire and forget)
+    try {
+      console.log("Triggering Inngest job...");
+      await inngest.send({
+        name: "repository.connected",
+        data: {
+          owner,
+          repo,
+          userId: session.user.id,
+        },
+      });
+      console.log("Inngest job triggered");
+    } catch (inngestError) {
+      console.error("Failed to trigger repository indexing:", inngestError);
+      // Don't throw - repository is already created
     }
 
     console.log("=== Connect Repository Success ===");
     return { success: true, message: "Repository connected successfully" };
   } catch (error) {
     console.error("=== Connect Repository Error ===");
-    console.error("Error:", error);
+    console.error("Error type:", error?.constructor?.name);
+    console.error("Error message:", error instanceof Error ? error.message : String(error));
     console.error("Error stack:", error instanceof Error ? error.stack : "No stack");
     
-    const errorMessage = error instanceof Error ? error.message : "Failed to connect repository";
+    // Return user-friendly error message
+    const errorMessage = error instanceof Error ? error.message : "Failed to connect repository. Please try again.";
     throw new Error(errorMessage);
   }
 }
