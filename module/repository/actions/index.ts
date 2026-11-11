@@ -12,30 +12,51 @@ export async function fetchRepositories(
   page: number = 1,
   perPage: number = 10
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  try {
+    console.log("=== Fetch Repositories Debug ===");
+    console.log("Page:", page, "Per Page:", perPage);
 
-  if (!session) {
-    throw new Error("Unauthorized");
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    console.log("Session:", session?.user?.id);
+
+    if (!session?.user?.id) {
+      throw new Error("Unauthorized - Please log in");
+    }
+
+    console.log("Fetching GitHub repositories...");
+    const githubRepos = await getRepositories(page, perPage);
+    console.log("GitHub repos fetched:", githubRepos.length);
+
+    console.log("Fetching connected repositories from database...");
+    const dbRepos = await prisma.repository.findMany({
+      where: {
+        userId: session.user.id,
+      },
+    });
+    console.log("DB repos found:", dbRepos.length);
+
+    const connectedRepoIds = new Set(
+      dbRepos.map((repo) => repo.githubId)
+    );
+
+    const result = githubRepos.map((repo: any) => ({
+      ...repo,
+      isConnected: connectedRepoIds.has(BigInt(repo.id)),
+    }));
+
+    console.log("=== Fetch Repositories Success ===");
+    return result;
+  } catch (error) {
+    console.error("=== Fetch Repositories Error ===");
+    console.error("Error:", error);
+    console.error("Stack:", error instanceof Error ? error.stack : "No stack");
+    
+    // Return empty array instead of throwing to prevent page crash
+    return [];
   }
-
-  const githubRepos = await getRepositories(page, perPage); 
-
-  const dbRepos = await prisma.repository.findMany({
-  where: {
-    userId: session.user.id,
-  },
-});
-
-const connectedRepoIds = new Set(
-  dbRepos.map((repo) => repo.githubId)
-);
-
-return githubRepos.map((repo: any) => ({
-  ...repo,
-  isConnected: connectedRepoIds.has(BigInt(repo.id)),
-}));
 }
 export async function connectRepository(
   owner: string,

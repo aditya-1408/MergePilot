@@ -7,22 +7,31 @@ import { headers } from "next/headers";
  * Getting the github access token
  */
 export async function getGithubToken() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  }); 
-  if (!session) {
-    throw new Error("Unauthorized");
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    
+    if (!session?.user?.id) {
+      throw new Error("No active session");
+    }
+
+    const account = await prisma.account.findFirst({
+      where: {
+        userId: session.user.id,
+        providerId: "github",
+      },
+    });
+
+    if (!account?.accessToken) {
+      throw new Error("No GitHub access token found. Please reconnect your GitHub account.");
+    }
+
+    return account.accessToken;
+  } catch (error) {
+    console.error("GitHub token error:", error);
+    throw error;
   }
-  const account = await prisma.account.findFirst({
-    where: {
-      userId: session.user.id,
-      providerId: "github",
-    },
-  });
-  if (!account?.accessToken) {
-    throw new Error("No github access token found");
-  }
-  return account.accessToken;
 }
 
 interface ContributionDay {
